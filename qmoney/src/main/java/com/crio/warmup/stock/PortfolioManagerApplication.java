@@ -73,6 +73,7 @@ public class PortfolioManagerApplication {
     Logger logger = Logger.getLogger(PortfolioManagerApplication.class.getCanonicalName());
     ObjectMapper mapper = new ObjectMapper();
     logger.info(mapper.writeValueAsString(object));
+    logger.info("Hello");
   }
 
   private static File resolveFileFromResources(String filename) throws URISyntaxException {
@@ -120,8 +121,8 @@ public class PortfolioManagerApplication {
      String valueOfArgument0 = "trades.json";
      String resultOfResolveFilePathArgs0 = "/home/crio-user/workspace/shubhrajitdey98-ME_QMONEY_V2/qmoney/bin/main/trades.json";
      String toStringOfObjectMapper = "com.fasterxml.jackson.databind.ObjectMapper@67c27493";
-     String functionNameFromTestFileInStackTrace = "mainReadFile";
-     String lineNumberFromTestFileInStackTrace = "29";
+     String functionNameFromTestFileInStackTrace = "PortfolioManagerApplicationTest.mainReadFile()";
+     String lineNumberFromTestFileInStackTrace = "24.1";
 
 
     return Arrays.asList(new String[]{valueOfArgument0, resultOfResolveFilePathArgs0,

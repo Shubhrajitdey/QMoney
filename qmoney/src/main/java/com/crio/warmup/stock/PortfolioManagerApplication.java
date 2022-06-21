@@ -224,17 +224,10 @@ public class PortfolioManagerApplication {
       return portfolioManager.calculateAnnualizedReturn(Arrays.asList(portfolioTrades), endDate);
   }
 
-
- 
-
   public static void main(String[] args) throws Exception {
     Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler());
     ThreadContext.put("runId", UUID.randomUUID().toString());
     printJsonObject(mainCalculateReturnsAfterRefactor(args));
-
-
-
-
   }
 }
 

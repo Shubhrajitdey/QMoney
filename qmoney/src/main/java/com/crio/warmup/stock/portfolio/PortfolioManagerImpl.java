@@ -3,11 +3,11 @@ package com.crio.warmup.stock.portfolio;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.SECONDS;
-
 import com.crio.warmup.stock.dto.AnnualizedReturn;
 import com.crio.warmup.stock.dto.Candle;
 import com.crio.warmup.stock.dto.PortfolioTrade;
 import com.crio.warmup.stock.dto.TiingoCandle;
+import com.crio.warmup.stock.quotes.StockQuotesService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -28,9 +28,10 @@ import org.springframework.web.client.RestTemplate;
 
 public class PortfolioManagerImpl implements PortfolioManager {
   private RestTemplate restTemplate;
-
+  private StockQuotesService stockQuotesService;
   // Caution: Do not delete or modify the constructor, or else your build will break!
   // This is absolutely necessary for backward compatibility
+  @Deprecated
   protected PortfolioManagerImpl(RestTemplate restTemplate) {
     this.restTemplate = restTemplate;
   }
@@ -49,44 +50,46 @@ public class PortfolioManagerImpl implements PortfolioManager {
 
   //CHECKSTYLE:OFF
 
-  public List<AnnualizedReturn> calculateAnnualizedReturn(List<PortfolioTrade> portfolioTrades,
-      LocalDate endDate)  {
-        List<AnnualizedReturn> annualizedReturnsList = new ArrayList<>();
-        for (PortfolioTrade pt : portfolioTrades) {
-            List<Candle> tiingoCandlesList = null;
-            try {
-              tiingoCandlesList = getStockQuote(pt.getSymbol(), pt.getPurchaseDate(), endDate);
-            } catch (JsonProcessingException e) {
-              e.printStackTrace();
-            }
-            Double openingPrice = getOpeningPriceOnStartDate(tiingoCandlesList);
-            Double closingPrice = getClosingPriceOnEndDate(tiingoCandlesList);
-            annualizedReturnsList.add(calculateAnnualizedReturns(endDate, pt, openingPrice, closingPrice));
+  public PortfolioManagerImpl(StockQuotesService stockQuotesService) {
+    this.stockQuotesService = stockQuotesService;
+  }
+  public List<AnnualizedReturn> calculateAnnualizedReturn(List<PortfolioTrade> portfolioTrades,LocalDate endDate){
+      List<AnnualizedReturn> annualizedReturnsList = new ArrayList<>();
+      for (PortfolioTrade pt : portfolioTrades) {
+          List<Candle> tiingoCandlesList = null;
+          try {
+            tiingoCandlesList = getStockQuote(pt.getSymbol(), pt.getPurchaseDate(), endDate);
+          } catch (JsonProcessingException e) {
+            e.printStackTrace();
+          }
+          Double openingPrice = getOpeningPriceOnStartDate(tiingoCandlesList);
+          Double closingPrice = getClosingPriceOnEndDate(tiingoCandlesList);
+          annualizedReturnsList.add(calculateAnnualizedReturns(endDate, pt, openingPrice, closingPrice));
     }
     annualizedReturnsList.sort(getComparator());
     return annualizedReturnsList;
-    }
+  }
   
-    static Double getOpeningPriceOnStartDate(List<Candle> candles) {
-      return candles.get(0).getOpen();
-    }
+  static Double getOpeningPriceOnStartDate(List<Candle> candles) {
+    return candles.get(0).getOpen();
+  }
 
 
-    public static Double getClosingPriceOnEndDate(List<Candle> candles) {
-      return candles.get(candles.size() - 1).getClose();
-    }
-    
-    public static String getToken() {
-      String TOKEN = "22e405823b96a0065f7e3ecb5b60a44ad046f434";
-      return TOKEN;
-    }
-    public static AnnualizedReturn calculateAnnualizedReturns(LocalDate endDate,
-        PortfolioTrade trade, Double buyPrice, Double sellPrice) {
-      Double totalReturn = (sellPrice - buyPrice) / buyPrice;
-      Double noOfYears = ChronoUnit.DAYS.between(trade.getPurchaseDate(), endDate) / 365.24;
-      Double annualizedReturns = Math.pow((1.0 + totalReturn), (1.0 / noOfYears)) - 1;
-      return new AnnualizedReturn(trade.getSymbol(), annualizedReturns, totalReturn);
-    }
+  public static Double getClosingPriceOnEndDate(List<Candle> candles) {
+    return candles.get(candles.size() - 1).getClose();
+  }
+  
+  public static String getToken() {
+    String TOKEN = "22e405823b96a0065f7e3ecb5b60a44ad046f434";
+    return TOKEN;
+  }
+  public static AnnualizedReturn calculateAnnualizedReturns(LocalDate endDate,
+    PortfolioTrade trade, Double buyPrice, Double sellPrice) {
+    Double totalReturn = (sellPrice - buyPrice) / buyPrice;
+    Double noOfYears = ChronoUnit.DAYS.between(trade.getPurchaseDate(), endDate) / 365.24;
+    Double annualizedReturns = Math.pow((1.0 + totalReturn), (1.0 / noOfYears)) - 1;
+    return new AnnualizedReturn(trade.getSymbol(), annualizedReturns, totalReturn);
+  }
   private Comparator<AnnualizedReturn> getComparator() {
     return Comparator.comparing(AnnualizedReturn::getAnnualizedReturn).reversed();
   }
@@ -98,16 +101,17 @@ public class PortfolioManagerImpl implements PortfolioManager {
   //  Remember to fill out the buildUri function and use that.
 
 
-  public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to)
-      throws JsonProcessingException {
-       TiingoCandle[] response = restTemplate.getForObject(
-       buildUri(symbol, from, to), TiingoCandle[].class);
-    return Arrays.stream(response).collect(Collectors.toList());
+  public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to) throws JsonProcessingException {
+    // TiingoCandle[] response = restTemplate.getForObject(
+    // buildUri(symbol, from, to), TiingoCandle[].class);
+    // return Arrays.stream(response).collect(Collectors.toList());
+
+    return stockQuotesService.getStockQuote(symbol, from, to);
   }
 
-  protected String buildUri(String symbol, LocalDate startDate, LocalDate endDate) {
-       String uriTemplate = "https://api.tiingo.com/tiingo/daily/"+symbol+"/prices?"
-           + "startDate="+startDate+"&endDate="+endDate+"&token="+ getToken();
-       return uriTemplate;
-  }
+  // protected String buildUri(String symbol, LocalDate startDate, LocalDate endDate) {
+  //   String uriTemplate = "https://api.tiingo.com/tiingo/daily/"+symbol+"/prices?"
+  //       + "startDate="+startDate+"&endDate="+endDate+"&token="+ getToken();
+  //   return uriTemplate;
+  // }
 }

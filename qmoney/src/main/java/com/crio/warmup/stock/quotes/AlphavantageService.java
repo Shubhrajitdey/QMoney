@@ -57,6 +57,7 @@ public class AlphavantageService implements StockQuotesService {
   //  2. Use this method in #getStockQuote.
   public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to) throws JsonProcessingException {
     String response = restTemplate.getForObject(buildUri(symbol), String.class);
+    System.out.println(response);
     AlphavantageDailyResponse responseArr = getObjectMapper().readValue(response, 
         AlphavantageDailyResponse.class);
     List<Candle> alphavantageDailyResponses = new ArrayList<>();
@@ -72,7 +73,7 @@ public class AlphavantageService implements StockQuotesService {
   }
   
   protected String buildUri(String symbol) {
-    String uriTemplate = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM"
+    String uriTemplate = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="
         + symbol + "&outputsize=full&apikey=" + getToken();
     return uriTemplate;
   }

@@ -23,7 +23,7 @@ public enum StockQuoteServiceFactory {
   //  ./gradlew test --tests StockQuoteServiceFactory
 
   public StockQuotesService getService(String provider, RestTemplate restTemplate) {
-    switch (provider.toLowerCase()) {
+    switch (provider!=null?provider.toLowerCase():"alphaventage") {
       case "tiingo":
         return new TiingoService(restTemplate);
       default:

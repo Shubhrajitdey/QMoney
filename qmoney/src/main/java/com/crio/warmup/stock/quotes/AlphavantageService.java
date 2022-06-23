@@ -7,6 +7,7 @@ import com.crio.warmup.stock.dto.AlphavantageCandle;
 import com.crio.warmup.stock.dto.AlphavantageDailyResponse;
 import com.crio.warmup.stock.dto.Candle;
 import com.crio.warmup.stock.dto.TiingoCandle;
+import com.crio.warmup.stock.exception.StockQuoteServiceException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,11 +56,17 @@ public class AlphavantageService implements StockQuotesService {
   //  1. Write a method to create appropriate url to call Alphavantage service. The method should
   //     be using configurations provided in the {@link @application.properties}.
   //  2. Use this method in #getStockQuote.
-  public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to) throws JsonProcessingException {
+  public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to) throws StockQuoteServiceException {
+    AlphavantageDailyResponse responseArr;
     String response = restTemplate.getForObject(buildUri(symbol), String.class);
-    System.out.println(response);
-    AlphavantageDailyResponse responseArr = getObjectMapper().readValue(response, 
-        AlphavantageDailyResponse.class);
+    try{
+      responseArr = getObjectMapper().readValue(response, AlphavantageDailyResponse.class);
+      if(responseArr.getCandles()==null || response ==null){
+        throw new StockQuoteServiceException("Invalid Response");
+      }
+    }catch(JsonProcessingException e){
+      throw new StockQuoteServiceException(e.getMessage());
+    }
     List<Candle> alphavantageDailyResponses = new ArrayList<>();
     for (LocalDate ld : responseArr.getCandles().keySet()) {
       if (ld.isAfter(from.minusDays(1)) && ld.isBefore(to.plusDays(1))) {
@@ -89,5 +96,13 @@ public class AlphavantageService implements StockQuotesService {
     objectMapper.registerModule(new JavaTimeModule());
     return objectMapper;
   }
+  // TODO: CRIO_TASK_MODULE_EXCEPTIONS
+  //   1. Update the method signature to match the signature change in the interface.
+  //   2. Start throwing new StockQuoteServiceException when you get some invalid response from
+  //      Alphavantage, or you encounter a runtime exception during Json parsing.
+  //   3. Make sure that the exception propagates all the way from PortfolioManager, so that the
+  //      external user's of our API are able to explicitly handle this exception upfront.
+  //CHECKSTYLE:OFF
+
 }
 

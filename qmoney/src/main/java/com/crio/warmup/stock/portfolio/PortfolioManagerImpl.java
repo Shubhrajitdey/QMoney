@@ -7,6 +7,7 @@ import com.crio.warmup.stock.dto.AnnualizedReturn;
 import com.crio.warmup.stock.dto.Candle;
 import com.crio.warmup.stock.dto.PortfolioTrade;
 import com.crio.warmup.stock.dto.TiingoCandle;
+import com.crio.warmup.stock.exception.StockQuoteServiceException;
 import com.crio.warmup.stock.quotes.StockQuotesService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,15 +54,10 @@ public class PortfolioManagerImpl implements PortfolioManager {
   public PortfolioManagerImpl(StockQuotesService stockQuotesService) {
     this.stockQuotesService = stockQuotesService;
   }
-  public List<AnnualizedReturn> calculateAnnualizedReturn(List<PortfolioTrade> portfolioTrades,LocalDate endDate){
+  public List<AnnualizedReturn> calculateAnnualizedReturn(List<PortfolioTrade> portfolioTrades,LocalDate endDate) throws StockQuoteServiceException{
       List<AnnualizedReturn> annualizedReturnsList = new ArrayList<>();
       for (PortfolioTrade pt : portfolioTrades) {
-          List<Candle> tiingoCandlesList = null;
-          try {
-            tiingoCandlesList = getStockQuote(pt.getSymbol(), pt.getPurchaseDate(), endDate);
-          } catch (JsonProcessingException e) {
-            e.printStackTrace();
-          }
+          List<Candle> tiingoCandlesList = getStockQuote(pt.getSymbol(), pt.getPurchaseDate(), endDate);
           Double openingPrice = getOpeningPriceOnStartDate(tiingoCandlesList);
           Double closingPrice = getClosingPriceOnEndDate(tiingoCandlesList);
           annualizedReturnsList.add(calculateAnnualizedReturns(endDate, pt, openingPrice, closingPrice));
@@ -79,10 +75,10 @@ public class PortfolioManagerImpl implements PortfolioManager {
     return candles.get(candles.size() - 1).getClose();
   }
   
-  public static String getToken() {
-    String TOKEN = "22e405823b96a0065f7e3ecb5b60a44ad046f434";
-    return TOKEN;
-  }
+  // public static String getToken() {
+  //   String TOKEN = "22e405823b96a0065f7e3ecb5b60a44ad046f434";
+  //   return TOKEN;
+  // }
   public static AnnualizedReturn calculateAnnualizedReturns(LocalDate endDate,
     PortfolioTrade trade, Double buyPrice, Double sellPrice) {
     Double totalReturn = (sellPrice - buyPrice) / buyPrice;
@@ -101,17 +97,7 @@ public class PortfolioManagerImpl implements PortfolioManager {
   //  Remember to fill out the buildUri function and use that.
 
 
-  public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to) throws JsonProcessingException {
-    // TiingoCandle[] response = restTemplate.getForObject(
-    // buildUri(symbol, from, to), TiingoCandle[].class);
-    // return Arrays.stream(response).collect(Collectors.toList());
-
-    return stockQuotesService.getStockQuote(symbol, from, to);
+  public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to) throws StockQuoteServiceException{
+      return stockQuotesService.getStockQuote(symbol, from, to);
   }
-
-  // protected String buildUri(String symbol, LocalDate startDate, LocalDate endDate) {
-  //   String uriTemplate = "https://api.tiingo.com/tiingo/daily/"+symbol+"/prices?"
-  //       + "startDate="+startDate+"&endDate="+endDate+"&token="+ getToken();
-  //   return uriTemplate;
-  // }
 }

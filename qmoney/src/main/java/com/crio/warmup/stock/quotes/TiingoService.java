@@ -3,6 +3,8 @@ package com.crio.warmup.stock.quotes;
 
 import com.crio.warmup.stock.dto.Candle;
 import com.crio.warmup.stock.dto.TiingoCandle;
+import com.crio.warmup.stock.exception.StockQuoteServiceException;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,10 +34,14 @@ public class TiingoService implements StockQuotesService {
 
 
   // CHECKSTYLE:OFF
-  public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to) throws JsonProcessingException {
-    String response =
-        restTemplate.getForObject(buildUri(symbol, from, to), String.class);
-    TiingoCandle[] responseArr = getObjectMapper().readValue(response, TiingoCandle[].class);
+  public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to) throws StockQuoteServiceException {
+    TiingoCandle[] responseArr;
+    String response = restTemplate.getForObject(buildUri(symbol, from, to), String.class);
+    try{
+      responseArr = getObjectMapper().readValue(response, TiingoCandle[].class);
+    } catch (Exception e) {
+      throw new StockQuoteServiceException(e.getMessage());
+    } 
     return Arrays.stream(responseArr)
       .sorted(Comparator.comparing(TiingoCandle::getDate))
       .collect(Collectors.toList());
